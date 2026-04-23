@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&B Direct+ Salesforce Integration — Technical Case Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f0a;
+    --bg2: #141710;
+    --bg3: #1b1f17;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e6e0;
+    --muted: #8a8880;
+    --faint: #4a4845;
+    --green: #7ec97e;
+    --green-dim: rgba(126,201,126,0.12);
+    --green-border: rgba(126,201,126,0.25);
+    --blue: #7eb8e8;
+    --blue-dim: rgba(126,184,232,0.1);
+    --blue-border: rgba(126,184,232,0.22);
+    --amber: #e8c47e;
+    --amber-dim: rgba(232,196,126,0.1);
+    --amber-border: rgba(232,196,126,0.22);
+    --red: #e87e7e;
+    --red-dim: rgba(232,126,126,0.1);
+    --red-border: rgba(232,126,126,0.22);
+    --purple: #b07ee8;
+    --purple-dim: rgba(176,126,232,0.1);
+    --purple-border: rgba(176,126,232,0.22);
+    --teal: #7ee8d8;
+    --teal-dim: rgba(126,232,216,0.1);
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+    font-weight: 300;
+  }
+
+  /* ── HEADER ── */
+  .hero {
+    border-bottom: 1px solid var(--border);
+    padding: 80px 0 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -120px; left: -80px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(126,201,126,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: -40px;
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(126,184,232,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 32px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid var(--green-border);
+    padding: 4px 12px; border-radius: 20px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .badge::before { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: #f2f0ea;
+    margin-bottom: 20px;
+  }
+  h1 em { font-style: italic; font-weight: 300; color: var(--green); }
+
+  .hero-sub {
+    font-size: 17px; color: var(--muted); font-weight: 300;
+    max-width: 600px; line-height: 1.65; margin-bottom: 36px;
+  }
+
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 24px;
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--faint);
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .meta-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .meta-value { color: var(--text); font-size: 13px; }
+
+  /* ── NAV ── */
+  .sticky-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(12,15,10,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0;
+  }
+  .nav-inner {
+    max-width: 860px; margin: 0 auto; padding: 0 32px;
+    display: flex; gap: 0; overflow-x: auto;
+  }
+  .nav-inner::-webkit-scrollbar { display: none; }
+  .nav-link {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    color: var(--faint); text-decoration: none;
+    padding: 14px 16px;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .nav-link:hover { color: var(--text); border-color: var(--border2); }
+
+  /* ── SECTIONS ── */
+  section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  section:last-child { border-bottom: none; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--faint); margin-bottom: 10px;
+  }
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(22px, 3.5vw, 30px);
+    font-weight: 600; line-height: 1.25;
+    color: #f2f0ea; margin-bottom: 28px;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 500;
+    color: var(--text); margin-bottom: 10px;
+  }
+  p { color: var(--muted); margin-bottom: 16px; }
+  p:last-child { margin-bottom: 0; }
+  strong { color: var(--text); font-weight: 500; }
+
+  /* ── CALLOUT BOXES ── */
+  .callout {
+    border-radius: var(--radius-lg);
+    padding: 18px 22px;
+    margin: 24px 0;
+    border: 1px solid;
+  }
+  .callout-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .callout p { font-size: 14px; line-height: 1.7; margin: 0; }
+  .callout.green  { background: var(--green-dim);  border-color: var(--green-border);  }
+  .callout.green  .callout-label { color: var(--green); }
+  .callout.green  p { color: rgba(126,201,126,0.85); }
+  .callout.blue   { background: var(--blue-dim);   border-color: var(--blue-border);   }
+  .callout.blue   .callout-label { color: var(--blue); }
+  .callout.blue   p { color: rgba(126,184,232,0.85); }
+  .callout.amber  { background: var(--amber-dim);  border-color: var(--amber-border);  }
+  .callout.amber  .callout-label { color: var(--amber); }
+  .callout.amber  p { color: rgba(232,196,126,0.85); }
+  .callout.purple { background: var(--purple-dim); border-color: var(--purple-border); }
+  .callout.purple .callout-label { color: var(--purple); }
+  .callout.purple p { color: rgba(176,126,232,0.85); }
+  .callout.red    { background: var(--red-dim);    border-color: var(--red-border);    }
+  .callout.red    .callout-label { color: var(--red); }
+  .callout.red    p { color: rgba(232,126,126,0.85); }
+  .callout.teal   { background: var(--teal-dim);   border-color: rgba(126,232,216,0.22); }
+  .callout.teal   .callout-label { color: var(--teal); }
+  .callout.teal   p { color: rgba(126,232,216,0.85); }
+
+  /* ── QUOTE BLOCK ── */
+  .quote-block {
+    border-left: 3px solid var(--green);
+    background: var(--bg2);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 20px 24px;
+    margin: 24px 0;
+  }
+  .quote-block p {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 16px; line-height: 1.7;
+    color: #c8c6c0; margin: 0;
+  }
+
+  /* ── DECISION CARDS ── */
+  .decision-grid { display: flex; flex-direction: column; gap: 2px; margin: 28px 0; }
+  .decision-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .decision-card:hover { border-color: var(--border2); }
+  .decision-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 20px 24px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .decision-num {
+    min-width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; font-weight: 500;
+  }
+  .d1 .decision-num { background: var(--blue-dim);   color: var(--blue);   border: 1px solid var(--blue-border); }
+  .d2 .decision-num { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green-border); }
+  .d3 .decision-num { background: var(--purple-dim); color: var(--purple); border: 1px solid var(--purple-border); }
+  .d4 .decision-num { background: var(--amber-dim);  color: var(--amber);  border: 1px solid var(--amber-border); }
+  .decision-title { font-size: 15px; font-weight: 500; color: var(--text); flex: 1; }
+  .decision-chevron {
+    color: var(--faint); font-size: 12px;
+    transition: transform 0.2s;
+    font-family: 'DM Mono', monospace;
+  }
+  .decision-card.open .decision-chevron { transform: rotate(180deg); }
+  .decision-body {
+    display: none;
+    padding: 0 24px 24px;
+    border-top: 1px solid var(--border);
+  }
+  .decision-card.open .decision-body { display: block; }
+  .decision-body p { font-size: 14px; line-height: 1.75; margin-top: 16px; }
+
+  /* ── CODE ── */
+  code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12.5px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: var(--green);
+  }
+  .code-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin: 20px 0;
+    color: #c8c6c0;
+  }
+  .kw { color: var(--purple); }
+  .kv { color: var(--blue); }
+  .ks { color: var(--green); }
+  .km { color: var(--amber); }
+  .kc { color: var(--faint); font-style: italic; }
+
+  /* ── ARCH DIAGRAM ── */
+  .arch-diagram {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px 24px;
+    margin: 28px 0;
+    overflow-x: auto;
+  }
+  .arch-flow {
+    display: flex; align-items: center;
+    gap: 0; flex-wrap: nowrap;
+    min-width: 600px;
+  }
+  .arch-node {
+    flex: 1; min-width: 100px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .arch-node .node-icon { font-size: 18px; margin-bottom: 6px; }
+  .arch-node .node-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    color: var(--text);
+    display: block;
+  }
+  .arch-node .node-sub {
+    font-size: 10px; color: var(--faint);
+    display: block; margin-top: 3px;
+  }
+  .arch-arrow {
+    color: var(--faint); font-size: 16px;
+    padding: 0 6px; flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+  }
+  .arch-node.n-blue  { border-color: var(--blue-border);  background: var(--blue-dim); }
+  .arch-node.n-green { border-color: var(--green-border); background: var(--green-dim); }
+  .arch-node.n-purple{ border-color: var(--purple-border);background: var(--purple-dim); }
+  .arch-node.n-amber { border-color: var(--amber-border); background: var(--amber-dim); }
+  .arch-node.n-teal  { border-color: rgba(126,232,216,0.22); background: var(--teal-dim); }
+
+  /* ── WEIGHT BARS ── */
+  .weight-bars { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
+  .weight-item { display: flex; flex-direction: column; gap: 6px; }
+  .weight-header { display: flex; justify-content: space-between; font-size: 13px; }
+  .weight-label { color: var(--text); font-weight: 400; }
+  .weight-pct { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+  .weight-bar-bg { background: var(--bg3); border-radius: 3px; height: 6px; }
+  .weight-bar { height: 6px; border-radius: 3px; }
+  .w-red    { background: var(--red);    color: var(--red); }
+  .w-amber  { background: var(--amber);  color: var(--amber); }
+  .w-blue   { background: var(--blue);   color: var(--blue); }
+
+  /* ── STACK LIST ── */
+  .stack-list { display: flex; flex-direction: column; gap: 2px; margin: 20px 0; }
+  .stack-item {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+  }
+  .stack-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .stack-name { font-size: 13px; font-weight: 500; color: var(--text); min-width: 200px; font-family: 'DM Mono', monospace; }
+  .stack-desc { font-size: 13px; color: var(--muted); }
+
+  /* ── LESSONS ── */
+  .lesson-list { display: flex; flex-direction: column; gap: 16px; margin: 20px 0; }
+  .lesson {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px 22px;
+  }
+  .lesson-num {
+    font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+    color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .lesson h3 { font-size: 14px; color: var(--text); margin-bottom: 8px; }
+  .lesson p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+  /* ── FOLLOWUP ── */
+  .faq-list { display: flex; flex-direction: column; gap: 2px; margin: 20px 0; }
+  .faq-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+  }
+  .faq-q {
+    padding: 16px 20px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg2);
+    font-size: 14px; font-weight: 500; color: var(--text);
+  }
+  .faq-q:hover { background: var(--bg3); }
+  .faq-q span { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--faint); transition: transform 0.2s; }
+  .faq-item.open .faq-q span { transform: rotate(180deg); }
+  .faq-a {
+    display: none; padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 13px; color: var(--muted); line-height: 1.75;
+  }
+  .faq-item.open .faq-a { display: block; }
+
+  /* ── RESULTS ── */
+  .results-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin: 28px 0;
+  }
+  .result-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+  }
+  .result-icon { font-size: 22px; margin-bottom: 10px; }
+  .result-value { font-size: 22px; font-weight: 500; font-family: 'Fraunces', serif; color: #f2f0ea; margin-bottom: 4px; }
+  .result-label { font-size: 12px; color: var(--muted); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 40px 0; text-align: center;
+  }
+  footer p { font-size: 12px; color: var(--faint); font-family: 'DM Mono', monospace; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .hero .container > * { animation: fadeUp 0.6s ease both; }
+  .hero .container > *:nth-child(1) { animation-delay: 0.05s; }
+  .hero .container > *:nth-child(2) { animation-delay: 0.12s; }
+  .hero .container > *:nth-child(3) { animation-delay: 0.18s; }
+  .hero .container > *:nth-child(4) { animation-delay: 0.24s; }
+
+  @media (max-width: 600px) {
+    .container { padding: 0 20px; }
+    .arch-flow { min-width: 520px; }
+    .results-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HERO ── -->
+<header class="hero">
+  <div class="container">
+    <div class="badge">Salesforce Integration · Case Study</div>
+    <h1>D&amp;B Direct+ <em>Credit Intelligence</em><br>on Salesforce</h1>
+    <p class="hero-sub">End-to-end design and implementation of a Dun &amp; Bradstreet enrichment engine with composite credit scoring, historical snapshots, and platform-native observability.</p>
+    <div class="meta-row">
+      <div class="meta-item"><span class="meta-label">Platform</span><span class="meta-value">Salesforce (API v61)</span></div>
+      <div class="meta-item"><span class="meta-label">Stack</span><span class="meta-value">Apex · LWC · CMDT · Named Credentials</span></div>
+      <div class="meta-item"><span class="meta-label">External API</span><span class="meta-value">D&amp;B Direct+ REST (OAuth 2.0)</span></div>
+      <div class="meta-item"><span class="meta-label">Phase</span><span class="meta-value">2-phase delivery · Production</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ── STICKY NAV ── -->
+<nav class="sticky-nav">
+  <div class="nav-inner">
+    <a class="nav-link" href="#problem">Problem</a>
+    <a class="nav-link" href="#architecture">Architecture</a>
+    <a class="nav-link" href="#decisions">Decisions</a>
+    <a class="nav-link" href="#logging">Observability</a>
+    <a class="nav-link" href="#lessons">Lessons</a>
+    <a class="nav-link" href="#results">Results</a>
+    <a class="nav-link" href="#followup">FAQ</a>
+  </div>
+</nav>
+
+<!-- ── PROBLEM ── -->
+<section id="problem">
+  <div class="container">
+    <div class="section-label">01 · Context</div>
+    <h2>The Problem</h2>
+    <div class="quote-block">
+      <p>"Sales and finance teams were running manual credit checks on new accounts — pulling D&amp;B reports outside Salesforce, copying data in by hand, and making judgment calls without a consistent framework. Slow, inconsistent, and completely undocumented."</p>
+    </div>
+    <p>The business need was clear: bring credit enrichment inside Salesforce, automate the data fetch, and make the resulting score <strong>transparent, repeatable, and auditable</strong>. Finance teams needed to defend credit decisions to auditors — which meant the system had to produce not just a score, but an evidence trail.</p>
+    <div class="callout green">
+      <div class="callout-label">Outcome Framing</div>
+      <p>The mandate went beyond "enrich fields on Account." It required a full credit intelligence workflow: automated D&amp;B data pull → weighted composite scoring → immutable snapshot per enrichment event → on-record status visibility for the finance team.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── ARCHITECTURE ── -->
+<section id="architecture">
+  <div class="container">
+    <div class="section-label">02 · System Design</div>
+    <h2>Architecture Overview</h2>
+    <p>The integration follows a layered pipeline — each layer has a single responsibility and can be tested and deployed independently.</p>
+
+    <div class="arch-diagram">
+      <div class="arch-flow">
+        <div class="arch-node n-blue">
+          <div class="node-icon">⚡</div>
+          <span class="node-name">Trigger / QA</span>
+          <span class="node-sub">Quick Action</span>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node n-purple">
+          <div class="node-icon">⚙</div>
+          <span class="node-name">DnbCreditEngine</span>
+          <span class="node-sub">Orchestration</span>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node n-blue">
+          <div class="node-icon">☁</div>
+          <span class="node-name">D&amp;B API</span>
+          <span class="node-sub">Direct+ REST</span>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node n-green">
+          <div class="node-icon">▲</div>
+          <span class="node-name">DnbParser</span>
+          <span class="node-sub">JSON → SObject</span>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node n-amber">
+          <div class="node-icon">◆</div>
+          <span class="node-name">DnbCreditEvaluator</span>
+          <span class="node-sub">Weighted Score</span>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node n-teal">
+          <div class="node-icon">■</div>
+          <span class="node-name">Snapshot + Account</span>
+          <span class="node-sub">Persist</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:14px;margin-top:8px;">Apex Class Responsibilities</h3>
+<div class="stack-list">
+
+  <div class="stack-item">
+    <div class="stack-dot" style="background:var(--blue)"></div>
+    <span class="stack-name">DnbCreditEngine</span>
+    <span class="stack-desc">Entry point. Receives Account ID + scenario type, fetches the DUNS number, orchestrates the full pipeline, and persists results. Nothing else calls D&B directly.</span>
+  </div>
+
+  <div class="stack-item">
+    <div class="stack-dot" style="background:var(--purple)"></div>
+    <span class="stack-name">DnbService</span>
+    <span class="stack-desc">HTTP layer. Calls the D&B Direct+ REST API using the DUNS number via Named Credential. Returns raw JSON response to the engine. No parsing or scoring logic.</span>
+  </div>
+
+  <div class="stack-item">
+    <div class="stack-dot" style="background:var(--green)"></div>
+    <span class="stack-name">DnbParser</span>
+    <span class="stack-desc">Null-safe JSON → DnbEnrichmentResult mapping. Extracts company info, financials, credit scores, and legal events. Handles country-specific schema variance with typed fallbacks on every field.</span>
+  </div>
+
+  <div class="stack-item">
+    <div class="stack-dot" style="background:var(--amber)"></div>
+    <span class="stack-name">DnbCreditEvaluator</span>
+    <span class="stack-desc">Weighted composite scorer. Blends failure score (45%), delinquency score (30%), and FSI (25%) into a 0–100 composite. Assigns GREEN ≥61 / AMBER 41–60 / RED &lt;41 with a human-readable reason.</span>
+  </div>
+
+  <div class="stack-item">
+    <div class="stack-dot" style="background:var(--red)"></div>
+    <span class="stack-name">DnbFsiScoringService</span>
+    <span class="stack-desc">Converts D&B FSI alpha codes (5A, 4A, 3A…) into a normalised 0–100 numeric score consumed by DnbCreditEvaluator. Isolated because FSI has a structurally different response schema to all L1 blocks.</span>
+  </div>
+
+  <div class="stack-item">
+    <div class="stack-dot" style="background:var(--teal)"></div>
+    <span class="stack-name">Dnb_Block_Group__mdt</span>
+    <span class="stack-desc">Custom Metadata Type. One record per D&B data block with an Is_Active__c toggle. Engine reads this at runtime to build the block parameter string — no code change needed to add or remove blocks.</span>
+  </div>
+
+</div>
+
+    <h3 style="margin-bottom:14px;margin-top:28px;">Authentication</h3>
+    <div class="code-block"><span class="kw">Named Credential</span>:  DNB_Direct_Plus
+  <span class="kc">→ Target URL</span>:    https://plus.dnb.com
+  <span class="kc">→ Auth type</span>:     External Credential (OAuth 2.0 Client Credentials)
+  <span class="kc">→ Token endpoint</span>: https://plus.dnb.com/v2/token
+  <span class="kc">→ Principal</span>:     Per-org integration principal
+  <span class="kc">→ Secrets</span>:      Client ID + Secret in Credential Parameters (encrypted)
+
+<span class="kw">Entitled Blocks</span>:
+  <span class="ks">companyinfo</span>       Company Information L1
+  <span class="ks">entityresolution</span>  Company Entity Resolution L1
+  <span class="ks">financials</span>        Company Financials L1
+  <span class="ks">filingevents</span>      Filing &amp; Events L1
+  <span class="ks">fsi</span>               Financial Strength Insights L2  <span class="kc">← separate schema</span></div>
+  </div>
+</section>
+
+<!-- ── DECISIONS ── -->
+<section id="decisions">
+  <div class="container">
+    <div class="section-label">03 · Design Decisions</div>
+    <h2>Four Architecture Decisions</h2>
+    <p>Each decision below includes the reasoning, the technical mechanism, and the trade-off that was consciously accepted.</p>
+
+    <div class="decision-grid">
+
+      <div class="decision-card d1 open">
+        <div class="decision-header" onclick="toggleCard(this)">
+          <div class="decision-num">01</div>
+          <div class="decision-title">Metadata-driven block selection</div>
+          <div class="decision-chevron">▼</div>
+        </div>
+        <div class="decision-body">
+          <p>D&amp;B's API is block-based — each data bundle is requested and billed separately. Hardcoding block names in Apex would mean a deployment every time the client's D&amp;B contract changed or a new block was enabled.</p>
+          <div class="callout blue">
+            <div class="callout-label">Mechanism</div>
+            <p>Custom Metadata Type <code>Dnb_Block_Group__mdt</code> — one record per D&amp;B block, with an <code>Is_Active__c</code> checkbox. The engine queries this at runtime and builds the block parameter string dynamically. Toggling a block on or off is a metadata record change — deployable via SFDX, no Apex deployment required.</p>
+          </div>
+          <div class="callout amber">
+            <div class="callout-label">Trade-off</div>
+            <p>Slightly more upfront complexity versus hardcoding. Paid back immediately when the client's D&amp;B contract added the FSI L2 block mid-project — it was a new CMDT record, no code change, no release ticket.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="decision-card d2">
+        <div class="decision-header" onclick="toggleCard(this)">
+          <div class="decision-num">02</div>
+          <div class="decision-title">Weighted composite credit score</div>
+          <div class="decision-chevron">▼</div>
+        </div>
+        <div class="decision-body">
+          <p>D&amp;B returns multiple independent risk signals. No single field tells the full credit story — a company can have a high failure score but a healthy FSI rating (e.g. a young startup with strong backing). The composite had to reflect the client's actual risk priorities.</p>
+
+          <div class="weight-bars" style="margin:20px 0">
+            <div class="weight-item">
+              <div class="weight-header">
+                <span class="weight-label">Failure Score Percentile</span>
+                <span class="weight-pct w-red">45%</span>
+              </div>
+              <div class="weight-bar-bg"><div class="weight-bar w-red" style="width:45%"></div></div>
+            </div>
+            <div class="weight-item">
+              <div class="weight-header">
+                <span class="weight-label">Delinquency Score Percentile</span>
+                <span class="weight-pct w-amber">30%</span>
+              </div>
+              <div class="weight-bar-bg"><div class="weight-bar w-amber" style="width:30%"></div></div>
+            </div>
+            <div class="weight-item">
+              <div class="weight-header">
+                <span class="weight-label">FSI Financial Strength Indicator</span>
+                <span class="weight-pct w-blue">25%</span>
+              </div>
+              <div class="weight-bar-bg"><div class="weight-bar w-blue" style="width:25%"></div></div>
+            </div>
+          </div>
+
+          <div class="callout green">
+            <div class="callout-label">Transparency by design</div>
+            <p>Each component score is stored as its own field on Account and on the Snapshot object. The composite is stored separately. Anyone can see exactly why an account scored 42 — which input drove it and by how much. Scores are never a black box.</p>
+          </div>
+          <div class="callout amber">
+            <div class="callout-label">Trade-off</div>
+            <p>Weights were defined with the finance team — they're embedded in <code>DnbCreditEvaluator</code>. If weights need changing, a developer is involved. Mitigation: expose weights as Custom Metadata in a future iteration so finance can tune them without a deployment.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="decision-card d3">
+        <div class="decision-header" onclick="toggleCard(this)">
+          <div class="decision-num">03</div>
+          <div class="decision-title">Layered Apex with strict single responsibility</div>
+          <div class="decision-chevron">▼</div>
+        </div>
+        <div class="decision-body">
+          <p>A monolithic "enrich account" class would have worked for the happy path. But this integration handles international records where the D&amp;B JSON schema varies by country — a field present in a Norwegian company response may be absent in a German one. A single class makes isolating and fixing those failures impossible without risking unrelated logic.</p>
+
+          <div class="callout purple">
+            <div class="callout-label">Defensive parsing pattern</div>
+            <p>Every field access in <code>DnbParser</code> goes through a null-safe guard with a typed fallback. This is not defensive for the sake of it — it's a direct response to D&amp;B's per-country schema variance. <code>DnbFsiScoringService</code> is a separate class entirely because the L2 FSI block returns a structurally different JSON shape to all L1 blocks.</p>
+          </div>
+
+          <div class="code-block"><span class="kc">// Null-safe pattern in DnbParser</span>
+<span class="kw">String</span> riskSegment = (String) safeGet(data, <span class="ks">'failureScore.riskSegment'</span>, <span class="ks">''</span>);
+<span class="kw">Decimal</span> failurePct = (Decimal) safeGet(data, <span class="ks">'failureScore.nationalPercentile'</span>, <span class="km">0.0</span>);
+
+<span class="kw">private static</span> Object safeGet(Map&lt;String,Object&gt; m, String path, Object fallback) {
+    <span class="kc">// traverse dot-notation path with null check at each step</span>
+    <span class="kw">try</span> { <span class="kw">return</span> traverse(m, path); }
+    <span class="kw">catch</span> (Exception e) { <span class="kw">return</span> fallback; }
+}</div>
+
+          <div class="callout amber">
+            <div class="callout-label">Trade-off</div>
+            <p>More files, more cognitive surface area. The benefit: Phase 2 parser bug fixes (six of them, all country-specific) were isolated to <code>DnbParser</code> and redeployed without touching the scoring engine or API service layer.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="decision-card d4">
+        <div class="decision-header" onclick="toggleCard(this)">
+          <div class="decision-num">04</div>
+          <div class="decision-title">Finance Snapshot — immutable enrichment history</div>
+          <div class="decision-chevron">▼</div>
+        </div>
+        <div class="decision-body">
+          <p>Overwriting Account fields on each enrichment run loses history. The finance team needed to explain to auditors why a credit decision was made on a specific date — which requires point-in-time evidence, not current values.</p>
+
+          <div class="callout teal">
+            <div class="callout-label">Dnb_Finance_Snapshot__c</div>
+            <p>Append-only child object on Account. Each enrichment run writes one new Snapshot record containing: enrichment timestamp, all 43 D&amp;B financial fields, each component score, and the final composite. Account stores only the latest values for UI. Snapshot stores the full history.</p>
+          </div>
+
+          <div class="callout blue">
+            <div class="callout-label">Why not Field History Tracking?</div>
+            <p>FHT caps at 20 fields per object, has an 18-month retention limit, and does not capture the relationship between field values at a point in time. If failure score was 72 and delinquency was 31 on a given date, FHT shows two disconnected field change records. The Snapshot captures all 43 fields as a single coherent record — exactly what an auditor needs.</p>
+          </div>
+
+          <div class="callout amber">
+            <div class="callout-label">Trade-off</div>
+            <p>Additional DML per enrichment run. At scale, Snapshot records accumulate fast. Handled with a configurable retention period on the object and a scheduled <code>Database.Batchable</code> job to archive records beyond 12 months.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── LOGGING ── -->
+<section id="logging">
+  <div class="container">
+    <div class="section-label">04 · Observability</div>
+    <h2>Logging with Nebula Logger</h2>
+    <p>Rather than writing to a custom log object (which adds DML to the transaction and is wiped on rollback), this integration uses <strong>Nebula Logger</strong> — a 100% native, open-source Salesforce observability framework built on Platform Events.</p>
+
+    <div class="callout blue">
+      <div class="callout-label">Why platform events matter here</div>
+      <p><code>LogEntryEvent__e</code> platform events are published asynchronously and are <strong>not rolled back</strong> with the transaction. If an enrichment run throws an exception and the DML rolls back, the log entry still publishes. A hand-rolled custom log object would be silently wiped in the same scenario — exactly when you need the evidence most.</p>
+    </div>
+
+    <h3 style="margin:24px 0 14px;">Three logging levels in this integration</h3>
+    <div class="stack-list">
+      <div class="stack-item">
+        <div class="stack-dot" style="background:var(--red)"></div>
+        <span class="stack-name">Logger.error()</span>
+        <span class="stack-desc">API service class — non-200 HTTP response. Passes the Account SObject directly, capturing full record state at failure time.</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-dot" style="background:var(--amber)"></div>
+        <span class="stack-name">Logger.warn() — Parser</span>
+        <span class="stack-desc">Field mapping failure due to unexpected JSON structure. Tagged with country and DUNS number for filterable log queries.</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-dot" style="background:var(--blue)"></div>
+        <span class="stack-name">Logger.warn() — Engine</span>
+        <span class="stack-desc">Scoring skipped because required block data is absent. WARN not ERROR — expected edge case for certain D&amp;B entitlement configurations.</span>
+      </div>
+    </div>
+
+    <div class="code-block"><span class="kc">// Service class — HTTP failure with full SObject context</span>
+Logger.error(<span class="ks">'D&amp;B API returned non-200'</span>, accountRecord)
+      .addTag(<span class="ks">'DnbEnrichment'</span>)
+      .addTag(response.getStatusCode() + <span class="ks">''</span>);
+Logger.saveLog();
+
+<span class="kc">// Parser — field mapping failure tagged for filtering</span>
+Logger.warn(<span class="ks">'FSI field absent for country: '</span> + country)
+      .addTag(dunsNumber)
+      .addTag(country);
+
+<span class="kc">// Async Queueable — chain logs back to parent transaction</span>
+Logger.setParentLogTransactionId(originalTransactionId);
+Logger.info(<span class="ks">'Batch enrichment chunk complete'</span>);
+Logger.saveLog();</div>
+
+    <div class="callout green">
+      <div class="callout-label">Async transaction linking</div>
+      <p>Batch enrichment spawns multiple Queueable instances — each in its own transaction. <code>Logger.setParentLogTransactionId()</code> chains all child logs back to the originating <code>Log__c</code> record. One place to diagnose a batch run, not disconnected log fragments per Queueable instance.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── LESSONS ── -->
+<section id="lessons">
+  <div class="container">
+    <div class="section-label">05 · Production Reality</div>
+    <h2>Lessons Learned</h2>
+    <p>Both issues surfaced post go-live, not in sandbox.</p>
+
+    <div class="lesson-list">
+      <div class="lesson">
+        <div class="lesson-num">Lesson 01</div>
+        <h3>International data inconsistency — D&amp;B schema varies by country</h3>
+        <p>D&amp;B's API documentation describes a standard JSON structure. In production, field availability varies significantly by country. Norwegian records include fields absent from German ones. Zambian records have a different risk segment taxonomy entirely. This was invisible in sandbox testing because all test data was of North American or European/Scandinavian companies with the same schema  .</p>
+        <div class="callout red" style="margin-top:14px">
+          <div class="callout-label">Fix</div>
+          <p>Defensive null-safe parsing added to every field in <code>DnbParser</code> with typed fallback values. A mock response factory was built for seven country profiles — including DE, ZM, GB, US — to catch country-specific failures in tests before they reach production. Phase 2 included six targeted parser bug fixes.</p>
+        </div>
+      </div>
+
+      <div class="lesson">
+        <div class="lesson-num">Lesson 02</div>
+        <h3>FLS on Credit_Assessment__c fields — required manual post-deploy assignment</h3>
+        <p>Permission sets covering all 43 new fields were deployed with the package. Within the first business day, users were reporting they couldn't see enriched data. Root cause: profile-level FLS on the new fields hadn't been set, and permission set assignments hadn't been fully rolled out to all relevant users before go-live.</p>
+        <div class="callout red" style="margin-top:14px">
+          <div class="callout-label">Fix</div>
+          <p>FLS verification is now the first post-deployment check — confirmed via <code>Setup → Object Manager → Fields → Field Accessibility</code> against all affected profiles and permission sets before user communication goes out. Added explicitly to the deployment checklist as a non-optional step.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── RESULTS ── -->
+<section id="results">
+  <div class="container">
+    <div class="section-label">06 · Outcomes</div>
+    <h2>Results</h2>
+    <p>Two delivery phases. The core enrichment and scoring engine delivered in Phase 1. Phase 2 extended to 43 additional fields, fixed six international parser bugs, and stabilised the FSI composite scorer.</p>
+
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="result-icon">⚡</div>
+        <div class="result-value">On-demand</div>
+        <div class="result-label">Enrichment via Quick Action, replacing 1–2 day manual D&amp;B lookups</div>
+      </div>
+      <div class="result-card">
+        <div class="result-icon">◆</div>
+        <div class="result-value">43 fields</div>
+        <div class="result-label">D&amp;B financial fields mapped across Account + Credit_Assessment__c</div>
+      </div>
+      <div class="result-card">
+        <div class="result-icon">▲</div>
+        <div class="result-value">0 code changes</div>
+        <div class="result-label">Required to extend the integration after Phase 2 delivery</div>
+      </div>
+      <div class="result-card">
+        <div class="result-icon">■</div>
+        <div class="result-value">Full audit trail</div>
+        <div class="result-label">Per-enrichment Snapshot object with point-in-time evidence for auditors</div>
+      </div>
+    </div>
+
+    <div class="quote-block">
+      <p>"An architecture that's extended twice now without touching the core engine. The client went from manual D&amp;B lookups taking a day or two, to enrichment on-demand — with a full snapshot trail behind every score."</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="container">
+    <p>D&amp;B Direct+ · Salesforce Integration Case Study · Built end-to-end by Sidharrth Janardhanan Nandhakumar · </p>
+  </div>
+</footer>
+
+<script>
+  function toggleCard(header) {
+    const card = header.closest('.decision-card');
+    card.classList.toggle('open');
+  }
+
+  function toggleFaq(qEl) {
+    const item = qEl.closest('.faq-item');
+    item.classList.toggle('open');
+  }
+
+  // Open first decision by default, close rest
+  document.querySelectorAll('.decision-card').forEach((c,i) => {
+    if(i > 0) c.classList.remove('open');
+  });
+
+  // Scroll-based nav highlight
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.nav-link');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting) {
+        links.forEach(l => l.style.color = '');
+        const active = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+        if(active) active.style.color = 'var(--green)';
+      }
+    });
+  }, { threshold: 0.4 });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
